@@ -8,6 +8,18 @@ class ApplicationController < Sinatra::Base
 		set :session_secret, "password_security"
 	end
 
+	helpers do
+
+		def current_user
+		  @current_user ||= User.find_by(id: session[:user_id])
+		end
+	
+		def logged_in?
+		  !!current_user
+		end
+	
+	  end
+
 	get "/" do
 		erb :index
 	end
@@ -18,6 +30,13 @@ class ApplicationController < Sinatra::Base
 
 	post "/signup" do
 		#your code here!
+		user = User.new(username: params[:username], password: params[:password])
+		if user.save
+			redirect "/login"
+		  else
+			redirect "/failure"
+		  end
+		session[:user_id] = @user.id
 	end
 
 	get "/login" do
@@ -25,15 +44,18 @@ class ApplicationController < Sinatra::Base
 	end
 
 	post "/login" do
-		#your code here!
-	end
+		user = User.find_by(:username => params[:username])
+		if user && user.authenticate(params[:password])
+		  session[:user_id] = user.id
+		  redirect "/success"
+		else
+		  redirect "/failure"
+		end
+	  end
 
 	get "/success" do
-		if logged_in?
-			erb :success
-		else
-			redirect "/login"
-		end
+		user = User.find_by(:username => params[:username])
+		erb :success
 	end
 
 	get "/failure" do
@@ -45,14 +67,6 @@ class ApplicationController < Sinatra::Base
 		redirect "/"
 	end
 
-	helpers do
-		def logged_in?
-			!!session[:id]
-		end
-
-		def current_user
-			User.find(session[:id])
-		end
-	end
+	
 
 end
